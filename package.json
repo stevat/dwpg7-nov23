@@ -7,11 +7,12 @@
   },
   "type": "module",
   "scripts": {
-    "test": "mocha --recursive cinema-tickets-javascript/test"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "devDependencies": {
     "chai": "^4.3.10",
-    "jest": "28.1.1",
-    "mocha": "^10.0.0"
+    "jest": "^28.1.1",
+    "mocha": "^10.2.0",
+    "sinon": "^17.0.1"
   }
 }
