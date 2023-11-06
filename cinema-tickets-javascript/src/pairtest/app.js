@@ -8,7 +8,9 @@ const port = 300
 app.post('/bookTickets', (req, res) => {
     let tixQuery = req.body;
     
-    console.log("YO YO YO", tixQuery)
+    console.log("incoming query: ", tixQuery)
+
+
 
 })
 
