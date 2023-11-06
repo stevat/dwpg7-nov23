@@ -9,6 +9,7 @@ import InvalidPurchaseException from "../src/pairtest/lib/InvalidPurchaseExcepti
 import TicketPaymentService from "../src/thirdparty/paymentgateway/TicketPaymentService.js";
 import SeatReservationService from "../src/thirdparty/seatbooking/SeatReservationService.js";
 import TicketService from '../src/pairtest/TicketService.js';
+import { constants } from '../src/pairtest/constants.js';
 
 // const TicketPaymentService = sinon.spy(TicketService, 'TicketPaymentService');
 // let SeatReservationService = sinon.spy(TicketService, 'SeatReservationService');
@@ -37,7 +38,7 @@ describe('TicketService', () => {
         "Jeff",
         new TicketTypeRequest("ADULT", 1)
       );
-    }
+    };
     expect(outputOne).toThrow(InvalidPurchaseException); 
     expect(outputOne).toThrowError("Jeff should be numeric");
   })
@@ -48,7 +49,7 @@ describe('TicketService', () => {
         0,
         new TicketTypeRequest("ADULT", 1)
       );
-    }
+    };
     expect(outputOne).toThrow(InvalidPurchaseException); 
     expect(outputOne).toThrowError("0 should be greater than 0");
   })
@@ -59,13 +60,36 @@ describe('TicketService', () => {
   })
 
   it('Should not exceed the maximum number of ticket bookings', () => {
-    const output = new TicketService();
-    expect(output).to.deep.equal({}); 
+    const outputOne = () => {
+      ticketService.purchaseTickets(
+        15,
+        new TicketTypeRequest("ADULT", 21)
+      );
+    };
+    expect(outputOne).toThrow(InvalidPurchaseException); 
+    expect(outputOne).toThrowError("Aggregated tickets (21) should be between "+constants.MINIMUM_NO_OF_TICKETS+" and "+constants.MAXIMUM_NO_OF_TICKETS);
+
+    const outputTwo = () => {
+      ticketService.purchaseTickets(
+        16,
+        new TicketTypeRequest("ADULT", 4),
+        new TicketTypeRequest("CHILD", 8),
+        new TicketTypeRequest("INFANT", 11),
+      );
+    };
+    expect(outputTwo).toThrow(InvalidPurchaseException); 
+    expect(outputTwo).toThrowError("Aggregated tickets (23) should be between "+constants.MINIMUM_NO_OF_TICKETS+" and "+constants.MAXIMUM_NO_OF_TICKETS);
   })
 
   it('Should have at least the minimum number of ticket bookings', () => {
-    const output = new TicketService();
-    expect(output).to.deep.equal({}); 
+    const outputOne = () => {
+      ticketService.purchaseTickets(
+        15,
+        new TicketTypeRequest("ADULT", 0)
+      );
+    };
+    expect(outputOne).toThrow(InvalidPurchaseException); 
+    expect(outputOne).toThrowError("Aggregated tickets () should be between "+constants.MINIMUM_NO_OF_TICKETS+" and "+constants.MAXIMUM_NO_OF_TICKETS);
   })
 
   it('Should not allow child or infant tickets to be booked without an adult', () => {
