@@ -28,30 +28,30 @@ describe('TicketService', () => {
   });
 
   it('Should return a json object', () => {
-    console.log("****** Point A ")
-    expect(ticketService.purchaseTickets(1, new TicketTypeRequest("ADULT", 1))).toEqual({})
+    console.log('****** Point A ')
+    expect(ticketService.purchaseTickets(1, new TicketTypeRequest('ADULT', 1))).toEqual({})
   });
 
   it('Should have a numeric account ID', () => {
     const outputOne = () => {
       ticketService.purchaseTickets(
-        "Jeff",
-        new TicketTypeRequest("ADULT", 1)
+        'Jeff',
+        new TicketTypeRequest('ADULT', 1)
       );
     };
     expect(outputOne).toThrow(InvalidPurchaseException); 
-    expect(outputOne).toThrowError("Jeff should be numeric");
+    expect(outputOne).toThrowError('Jeff should be numeric');
   })
 
   it('Should have a greater than 0 numeric account ID', () => {
     const outputOne = () => {
       ticketService.purchaseTickets(
         0,
-        new TicketTypeRequest("ADULT", 1)
+        new TicketTypeRequest('ADULT', 1)
       );
     };
     expect(outputOne).toThrow(InvalidPurchaseException); 
-    expect(outputOne).toThrowError("0 should be greater than 0");
+    expect(outputOne).toThrowError('0 should be greater than 0');
   })
 
   it('Should handle multiple ticket bookings', () => {
@@ -63,38 +63,66 @@ describe('TicketService', () => {
     const outputOne = () => {
       ticketService.purchaseTickets(
         15,
-        new TicketTypeRequest("ADULT", 21)
+        new TicketTypeRequest('ADULT', 21)
       );
     };
     expect(outputOne).toThrow(InvalidPurchaseException); 
-    expect(outputOne).toThrowError("Aggregated tickets (21) should be between "+constants.MINIMUM_NO_OF_TICKETS+" and "+constants.MAXIMUM_NO_OF_TICKETS);
+    expect(outputOne).toThrowError('Aggregated tickets (21) should be between '+constants.MINIMUM_NO_OF_TICKETS+' and '+constants.MAXIMUM_NO_OF_TICKETS);
 
     const outputTwo = () => {
       ticketService.purchaseTickets(
         16,
-        new TicketTypeRequest("ADULT", 4),
-        new TicketTypeRequest("CHILD", 8),
-        new TicketTypeRequest("INFANT", 11),
+        new TicketTypeRequest('ADULT', 4),
+        new TicketTypeRequest('CHILD', 8),
+        new TicketTypeRequest('INFANT', 11),
       );
     };
     expect(outputTwo).toThrow(InvalidPurchaseException); 
-    expect(outputTwo).toThrowError("Aggregated tickets (23) should be between "+constants.MINIMUM_NO_OF_TICKETS+" and "+constants.MAXIMUM_NO_OF_TICKETS);
+    expect(outputTwo).toThrowError('Aggregated tickets (23) should be between '+constants.MINIMUM_NO_OF_TICKETS+' and '+constants.MAXIMUM_NO_OF_TICKETS);
   })
 
   it('Should have at least the minimum number of ticket bookings', () => {
     const outputOne = () => {
       ticketService.purchaseTickets(
-        15,
-        new TicketTypeRequest("ADULT", 0)
+        17,
+        new TicketTypeRequest('ADULT', 0)
       );
     };
     expect(outputOne).toThrow(InvalidPurchaseException); 
-    expect(outputOne).toThrowError("Aggregated tickets () should be between "+constants.MINIMUM_NO_OF_TICKETS+" and "+constants.MAXIMUM_NO_OF_TICKETS);
+    expect(outputOne).toThrowError('Aggregated tickets (0) should be between '+constants.MINIMUM_NO_OF_TICKETS+' and '+constants.MAXIMUM_NO_OF_TICKETS);
   })
 
   it('Should not allow child or infant tickets to be booked without an adult', () => {
-    const output = new TicketService();
-    expect(output).to.deep.equal({}); 
+    const outputOne = () => {
+      ticketService.purchaseTickets(
+        18,
+        new TicketTypeRequest('CHILD', 2),
+        new TicketTypeRequest('INFANT', 2)
+      );
+    };
+    expect(outputOne).toThrow(InvalidPurchaseException); 
+    expect(outputOne).toThrowError('At least 1 adult must be present');
+  })
+
+  it('Should not allow more infant tickets to be booked than adults', () => {
+    const outputOne = () => {
+      ticketService.purchaseTickets(
+        19,
+        new TicketTypeRequest('ADULT', 2),
+        new TicketTypeRequest('INFANT', 5)
+      );
+    };
+    expect(outputOne).toThrow(InvalidPurchaseException); 
+    expect(outputOne).toThrowError('Adults must outnumber infants');
+
+    const outputTwo = () => {
+      ticketService.purchaseTickets(
+        20,
+        new TicketTypeRequest('ADULT', 1),
+        new TicketTypeRequest('INFANT', 1)
+      );
+    };
+    expect(outputTwo).toEqual({});
   })
 
   it('Should issue a ticket but not book a seat for an infant', () => {
