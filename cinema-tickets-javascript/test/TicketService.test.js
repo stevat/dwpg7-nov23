@@ -1,9 +1,4 @@
-// import { expect } from 'chai';
 import {expect, jest, test} from '@jest/globals';
-// import { jest } from "@jest/globals";
-// import pkg from '@jest/globals';
-// const { jest } = pkg;
-
 import TicketTypeRequest from "../src/pairtest/lib/TicketTypeRequest.js";
 import InvalidPurchaseException from "../src/pairtest/lib/InvalidPurchaseException.js";
 import TicketPaymentService from "../src/thirdparty/paymentgateway/TicketPaymentService.js";
@@ -11,13 +6,6 @@ import SeatReservationService from "../src/thirdparty/seatbooking/SeatReservatio
 import TicketService from '../src/pairtest/TicketService.js';
 import { constants } from '../src/pairtest/constants.js';
 
-// const TicketPaymentService = sinon.spy(TicketService, 'TicketPaymentService');
-// let SeatReservationService = sinon.spy(TicketService, 'SeatReservationService');
-// const makePayment = jest
-//   .spyOn(TicketPaymentService.prototype, "makePayment")
-
-// const reserveSeat = jest
-//   .spyOn(SeatReservationService.prototype, "reserveSeat")
 
 describe('TicketService', () => {
   const ticketService = new TicketService();
@@ -28,8 +16,7 @@ describe('TicketService', () => {
   });
 
   it('Should return a json object', () => {
-    console.log('****** Point A ')
-    expect(ticketService.purchaseTickets(1, new TicketTypeRequest('ADULT', 1))).toEqual({})
+    expect(ticketService.purchaseTickets(1, new TicketTypeRequest('ADULT', 1))).toEqual({ messsage: 'transaction completed' })
   });
 
   it('Should have a numeric account ID', () => {
@@ -55,8 +42,12 @@ describe('TicketService', () => {
   })
 
   it('Should handle multiple ticket bookings', () => {
-    const output = new TicketService();
-    expect(output).to.deep.equal({}); 
+    const output = ticketService.purchaseTickets(
+      15,
+      new TicketTypeRequest('ADULT', 5)
+    );
+    expect(output).toEqual({ messsage: 'transaction completed' })
+
   })
 
   it('Should not exceed the maximum number of ticket bookings', () => {
@@ -108,59 +99,109 @@ describe('TicketService', () => {
     const outputOne = () => {
       ticketService.purchaseTickets(
         19,
-        new TicketTypeRequest('ADULT', 2),
-        new TicketTypeRequest('INFANT', 5)
+        new TicketTypeRequest('INFANT', 3),
+        new TicketTypeRequest('ADULT', 1)
       );
     };
     expect(outputOne).toThrow(InvalidPurchaseException); 
-    expect(outputOne).toThrowError('Adults must outnumber infants');
+    expect(outputOne).toThrowError('Account ID: 19 - Adults must outnumber infants');
 
-    const outputTwo = () => {
+    const outputTwo = 
       ticketService.purchaseTickets(
         20,
         new TicketTypeRequest('ADULT', 1),
         new TicketTypeRequest('INFANT', 1)
       );
-    };
-    expect(outputTwo).toEqual({});
+    expect(outputTwo).toEqual({ messsage: 'transaction completed' });
   })
 
   it('Should issue a ticket but not book a seat for an infant', () => {
-    const output = new TicketService();
-    expect(output).to.deep.equal({}); 
+    const reserveSeat = jest.spyOn(SeatReservationService.prototype, 'reserveSeat')
+      .mockImplementation(() => {
+        console.log('reserveSeat mock call');
+      });
+    ticketService.purchaseTickets(
+      21,
+      new TicketTypeRequest('ADULT', 2),
+      new TicketTypeRequest('INFANT', 1)
+    );
+    expect(reserveSeat).toHaveBeenCalledTimes(1);
+    expect(reserveSeat).toHaveBeenCalledWith(21, 2);
   })
 
   it('Should charge the correct fare for an adult ticket', () => {
-    const output = new TicketService();
-    // const makePayment = jest
-    //   .spyOn(TicketPaymentService.prototype, "makePayment")
-    expect(output).to.deep.equal({}); 
+    const makePaymentSpy = jest
+      .spyOn(TicketPaymentService.prototype, "makePayment")
+      .mockImplementation(() => {
+        console.log("mock payment spy");
+      });
+    ticketService.purchaseTickets(
+      22,
+      new TicketTypeRequest('ADULT', 1)
+    );
+    expect(makePaymentSpy).toHaveBeenCalledTimes(1);
+    expect(makePaymentSpy).toHaveBeenCalledWith(22, 20);
   })
 
   it('Should charge the correct fare for a child ticket', () => {
-    const output = new TicketService();
-    // const makePayment = jest
-    //   .spyOn(TicketPaymentService.prototype, "makePayment")
-    expect(output).to.deep.equal({}); 
+    const makePayment = jest
+      .spyOn(TicketPaymentService.prototype, "makePayment")
+      .mockImplementation(() => {
+        console.log("mock payment spy");
+      });
+    ticketService.purchaseTickets(
+      23,
+      new TicketTypeRequest('CHILD', 1),
+      new TicketTypeRequest('ADULT', 2),
+    );
+    expect(makePayment).toHaveBeenCalledTimes(1);
+    expect(makePayment).toHaveBeenCalledWith(23, 50);
   })
 
   it('Should not charge for an infant', () => {
-    const output = new TicketService();
-    // const makePayment = jest
-    //   .spyOn(TicketPaymentService.prototype, "makePayment")
-    expect(output).to.deep.equal({}); 
+    const makePayment = jest
+      .spyOn(TicketPaymentService.prototype, 'makePayment')
+      .mockImplementation(() => {
+        console.log("makePayment Mock call");
+      });
+    ticketService.purchaseTickets(
+      24,
+      new TicketTypeRequest('INFANT', 1),
+      new TicketTypeRequest('ADULT', 1)
+    );
+    expect(makePayment).toHaveBeenCalledTimes(1);
+    expect(makePayment).toHaveBeenCalledWith(24, 20);
   })
-
+ 
   it('Should call the TicketPaymentService with the correct aggregate charge', () => {
-    const output = new TicketService();
-    // const makePayment = jest
-    //   .spyOn(TicketPaymentService.prototype, "makePayment")
-    expect(output).to.deep.equal({}); 
+    const makePayment = jest
+      .spyOn(TicketPaymentService.prototype, 'makePayment')
+      .mockImplementation(() => {
+        console.log("makePayment Mock call");
+      });
+    ticketService.purchaseTickets(
+      25,
+      new TicketTypeRequest('INFANT', 1),
+      new TicketTypeRequest('ADULT', 10),
+      new TicketTypeRequest('CHILD', 2)
+    );
+    expect(makePayment).toHaveBeenCalledTimes(1);
+    expect(makePayment).toHaveBeenCalledWith(25, 220);
   })
 
   it('Should call the SeatReservationService with the correct no of seats to reserve', () => {
-    const output = new TicketService();
-    expect(output).to.deep.equal({}); 
+    const reserveSeat = jest.spyOn(SeatReservationService.prototype, 'reserveSeat')
+      .mockImplementation(() => {
+        console.log('reserveSeat mock call');
+      });
+    ticketService.purchaseTickets(
+      26,
+      new TicketTypeRequest('ADULT', 5),
+      new TicketTypeRequest('CHILD', 3),
+      new TicketTypeRequest('INFANT', 1)
+    );
+    expect(reserveSeat).toHaveBeenCalledTimes(1);
+    expect(reserveSeat).toHaveBeenCalledWith(26, 8);
   })
 
 })

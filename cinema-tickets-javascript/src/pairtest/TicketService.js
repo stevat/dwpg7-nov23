@@ -35,7 +35,7 @@ export default class TicketService {
   #adultsPresent = (accountId, ...ticketTypeRequests) => {
     let adultPresent = false;
     for (const request of ticketTypeRequests) {
-      if (request.getTicketType == 'ADULT') {
+      if (request.getTicketType() == 'ADULT') {
         adultPresent = true;
         break;
       }
@@ -51,10 +51,12 @@ export default class TicketService {
     let adultCount = 0;
     let infantCount = 0;
     for (const request of ticketTypeRequests) {
-      if (request.getTicketType == 'ADULT') {
-        adultCount += 1;
-      } else if (request.getTicketType == 'INFANT') {
-        infantCount += 1;
+      if (request.getTicketType() == 'ADULT') {
+        adultCount+=request.getNoOfTickets();
+        continue;
+      } else if (request.getTicketType() == 'INFANT') {
+        infantCount+=request.getNoOfTickets();
+        continue;
       }
     }
     if (adultCount >= infantCount) {
@@ -64,6 +66,49 @@ export default class TicketService {
     }
   }
 
+  #calculateAggregatePaymentAndResCount = (...ticketTypeRequests) => {
+    let noOfAdults = 0;
+    let noOfChildren = 0;
+    let noOfInfants = 0;
+    for (const request of ticketTypeRequests) {
+      switch(request.getTicketType()){
+        case 'ADULT':
+          noOfAdults+=request.getNoOfTickets();
+          continue;
+        case 'CHILD':
+          noOfChildren+=request.getNoOfTickets();
+          continue;
+        case 'INFANT':
+          noOfInfants+=request.getNoOfTickets();
+          continue;
+      }
+    }
+    console.log(' - ADULTS: ', noOfAdults, ' - CHILDREN: ', noOfChildren, ' - INFANTS: ', noOfInfants);
+    const resCount = noOfAdults + noOfChildren;
+    const ticketCount = noOfAdults + noOfChildren + noOfInfants;
+    const paymentAmount = (noOfAdults * constants.TICKET_COST.ADULT) + (noOfChildren * constants.TICKET_COST.CHILD);
+
+    console.log('resCount = ', resCount);
+    console.log('ticketCount = ', ticketCount);
+    console.log('paymentAmount = ', paymentAmount);
+
+    return {
+      'resCount': resCount,
+      'ticketCount': ticketCount,
+      'paymentAmount': paymentAmount
+    }
+  }
+
+  #takePayment = (accountId, calculations) => {
+    const ticketPaymentService = new TicketPaymentService();
+    ticketPaymentService.makePayment(accountId, calculations.paymentAmount);
+  }
+
+  #reserveTickets = (accountId, calculations) => {
+    const seatReservationService = new SeatReservationService();
+    seatReservationService.reserveSeat(accountId, calculations.resCount);
+  }
+
   purchaseTickets(accountId, ...ticketTypeRequests) {
     // throws InvalidPurchaseException
 
@@ -71,8 +116,15 @@ export default class TicketService {
     this.#isLegitimateNoOfTickets(accountId, ...ticketTypeRequests);
     this.#adultsPresent(accountId, ...ticketTypeRequests);
     this.#adultsOutnumberInfants(accountId, ...ticketTypeRequests);
-    console.log("legit account id passed");
 
-    return {}
+    console.log('calculating...')
+    const calculations = this.#calculateAggregatePaymentAndResCount(...ticketTypeRequests);
+    console.log('Account ID ', accountId, ' resCount: ', calculations.resCount, ' payment value: ', calculations.paymentAmount);
+    this.#takePayment(accountId, calculations);
+    this.#reserveTickets(accountId, calculations);
+
+    console.log('Account ID: ', accountId, ' - Tickets ordered and paid for');
+
+    return { messsage: 'transaction completed' };
   }
 }
